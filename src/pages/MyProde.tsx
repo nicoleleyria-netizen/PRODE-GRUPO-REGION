@@ -3,15 +3,16 @@ import { useAuth } from '../contexts/AuthContext'
 import { Layout } from '../components/layout/Layout'
 import { Header } from '../components/layout/Header'
 import {
-  TEAMS_BY_ID, GROUP_MATCHES, KNOCKOUT_MATCHES, PHASE_LABELS,
+  TEAMS_BY_ID, GROUP_MATCHES, KNOCKOUT_MATCHES, PHASE_LABELS, matchDateTime,
   type GroupLetter, type WCTeam,
 } from '../data/worldcup2026'
+import { isMatchOpen } from '../utils/dates'
 import {
   resolveBracket, type Picks, type MatchPick, type ResolvedMatch,
 } from '../utils/bracket'
 import { loadPicks } from '../utils/picksStore'
 import { persistPick, hydratePredictions } from '../lib/predictionsRepo'
-import { Minus, Plus, Trophy, Check, ChevronDown } from 'lucide-react'
+import { Minus, Plus, Trophy, Check, ChevronDown, Lock } from 'lucide-react'
 
 const GROUP_LETTERS: GroupLetter[] = ['A','B','C','D','E','F','G','H','I','J','K','L']
 const KO_ROUNDS = ['round_of_32','round_of_16','quarter','semi','third_place','final'] as const
@@ -198,7 +199,8 @@ function GroupBlock({ letter, picks, standings, open, onToggle, onChange }: {
           {matches.map(m => (
             <GroupMatchRow key={m.match_number} matchNumber={m.match_number}
               home={TEAMS_BY_ID[m.home_id]} away={TEAMS_BY_ID[m.away_id]}
-              pick={picks[m.match_number]} onChange={onChange} />
+              pick={picks[m.match_number]} onChange={onChange}
+              locked={!isMatchOpen(matchDateTime(m))} />
           ))}
         </div>
       )}
@@ -206,21 +208,23 @@ function GroupBlock({ letter, picks, standings, open, onToggle, onChange }: {
   )
 }
 
-function GroupMatchRow({ matchNumber, home, away, pick, onChange }: {
+function GroupMatchRow({ matchNumber, home, away, pick, onChange, locked }: {
   matchNumber: number; home: WCTeam; away: WCTeam
   pick?: MatchPick; onChange: (n: number, patch: Partial<MatchPick>) => void
+  locked?: boolean
 }) {
   const h = pick?.homeScore ?? null
   const a = pick?.awayScore ?? null
   return (
-    <div className="rounded-xl px-2.5 py-2 flex items-center gap-1.5" style={{ background: '#0D1929', border: '1px solid #1A3050' }}>
+    <div className="rounded-xl px-2.5 py-2 flex items-center gap-1.5"
+      style={{ background: '#0D1929', border: '1px solid #1A3050', opacity: locked ? 0.75 : 1 }}>
       <div className="flex items-center gap-1.5 flex-1 min-w-0 justify-end">
         <span className="text-[11px] font-bold truncate text-right" style={{ color: '#8AAAC8' }}>{home.short_name}</span>
         <span className="text-base">{home.flag_emoji}</span>
       </div>
-      <Stepper value={h} onChange={v => onChange(matchNumber, { homeScore: v })} />
-      <span className="text-[10px]" style={{ color: '#3D5A7A' }}>:</span>
-      <Stepper value={a} onChange={v => onChange(matchNumber, { awayScore: v })} />
+      <Stepper value={h} onChange={v => onChange(matchNumber, { homeScore: v })} disabled={locked} />
+      <span className="text-[10px]" style={{ color: '#3D5A7A' }}>{locked ? <Lock size={11} /> : ':'}</span>
+      <Stepper value={a} onChange={v => onChange(matchNumber, { awayScore: v })} disabled={locked} />
       <div className="flex items-center gap-1.5 flex-1 min-w-0">
         <span className="text-base">{away.flag_emoji}</span>
         <span className="text-[11px] font-bold truncate" style={{ color: '#8AAAC8' }}>{away.short_name}</span>
