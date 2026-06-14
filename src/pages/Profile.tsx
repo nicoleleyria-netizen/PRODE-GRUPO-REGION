@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { Layout } from '../components/layout/Layout'
@@ -266,11 +267,11 @@ function ProfileRow({ label, value, onClick }: { label: string; value: string; o
 }
 
 function MenuLink({ icon, label, to }: { icon: React.ReactNode; label: string; to?: string }) {
-  const navigate = to ? () => window.location.assign(to) : undefined
+  const navigate = useNavigate()
 
   return (
     <button
-      onClick={navigate}
+      onClick={to ? () => navigate(to) : undefined}
       className="w-full flex items-center gap-3 px-4 py-3.5 active:bg-gray-50 text-left"
     >
       {icon}
