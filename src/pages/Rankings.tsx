@@ -7,7 +7,7 @@ import { Header } from '../components/layout/Header'
 import { PageLoader } from '../components/ui/LoadingSpinner'
 import type { RankingRow } from '../types'
 
-type TabType = 'general' | 'sector' | 'argentina'
+type TabType = 'general' | 'argentina'
 
 const DEMO_RANKINGS: RankingRow[] = [
   { id: 'u1', username: 'mariela_c', full_name: 'Mariela Castro', sector: 'Comercial', avatar_url: null, total_points: 63, predictions_count: 15, exact_scores: 5, correct_outcomes: 9, rank: 1 },
@@ -33,15 +33,14 @@ export function Rankings() {
   async function loadRankings() {
     setLoading(true)
     if (isDemo) {
-      const rows = tab === 'sector' ? DEMO_RANKINGS.filter(r => r.sector === 'Redacción') : DEMO_RANKINGS
-      setRankings(rows.map((r, i) => ({ ...r, rank: i + 1 })))
+      setRankings(DEMO_RANKINGS.map((r, i) => ({ ...r, rank: i + 1 })))
       setMyRank(DEMO_RANKINGS.find(r => r.id === 'demo-user-id') ?? null)
       setLoading(false)
       return
     }
-    let query = supabase.from('rankings').select('*').order('rank', { ascending: true }).limit(50)
-    if (tab === 'sector' && profile?.sector) query = query.eq('sector', profile.sector)
-    else if (tab === 'argentina') query = supabase.from('argentina_rankings').select('*').order('rank', { ascending: true }).limit(50)
+    const query = tab === 'argentina'
+      ? supabase.from('argentina_rankings').select('*').order('rank', { ascending: true }).limit(50)
+      : supabase.from('rankings').select('*').order('rank', { ascending: true }).limit(50)
     const { data } = await query
     const rows = (data ?? []) as RankingRow[]
     setRankings(rows)
@@ -51,8 +50,7 @@ export function Rankings() {
 
   const tabs = [
     { key: 'general', label: 'GENERAL' },
-    { key: 'sector', label: 'MI SECTOR' },
-    { key: 'argentina', label: '🇦🇷 ARG' },
+    { key: 'argentina', label: '🇦🇷 ARGENTINA' },
   ] as { key: TabType; label: string }[]
 
   return (
