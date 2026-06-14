@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { supabase } from '../lib/supabase'
 import { Layout } from '../components/layout/Layout'
 import { MatchCard } from '../components/ui/MatchCard'
 import { Onboarding } from '../components/Onboarding'
@@ -13,10 +14,18 @@ import { parseISO, isToday, isTomorrow } from 'date-fns'
 import { ListChecks, ChevronRight } from 'lucide-react'
 
 export function Home() {
-  const { profile } = useAuth()
+  const { profile, isDemo } = useAuth()
   const navigate = useNavigate()
   const userId = profile?.id ?? 'anon'
   const [showOnboarding, setShowOnboarding] = useState(() => !hasOnboarded(userId))
+  const [stats, setStats] = useState<{ total_points: number; rank: number } | null>(null)
+
+  // Puntos y puesto reales desde la vista rankings
+  useEffect(() => {
+    if (!profile || isDemo) return
+    supabase.from('rankings').select('total_points, rank').eq('id', profile.id).single()
+      .then(({ data }) => { if (data) setStats(data as { total_points: number; rank: number }) })
+  }, [profile, isDemo])
 
   const picks = useMemo(() => loadPicks(userId), [userId])
   const allMatches = useMemo(() => buildFixture(picks), [picks])
@@ -53,8 +62,8 @@ export function Home() {
   }, [picks])
 
   const nextMatches = featuredMatches
-  const totalPoints = 0
-  const myRank = null as { rank: number } | null
+  const totalPoints = stats?.total_points ?? 0
+  const myRank = stats ? { rank: stats.rank } : null
   const streak = predMap.size
 
   const firstName = profile?.full_name?.split(' ')[0] ?? profile?.username ?? 'Jugador'
